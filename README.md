@@ -51,7 +51,7 @@ python train.py
 ### 3. Chạy ứng dụng
 Mở Command Prompt (CMD) và chạy các lệnh sau:
 ```bash
-cd đường_dẫn_đến_thư_mục_PythonProject4
+cd đường_dẫn_đến_thư_mục
 python -m streamlit run app.py
 ```
 
