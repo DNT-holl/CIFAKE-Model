@@ -48,11 +48,51 @@ def create_model():
     """
     model = CNN()
     return model
-
 def grad_cam(model, img_tensor, target_class=0):
-    """
-    Tạo Grad-CAM heatmap cho ảnh đầu vào
-    """
+    model.eval()
+
+    # Biến lưu activations và gradients
+    activations = None
+    gradients = None
+
+    def forward_hook(module, input, output):
+        nonlocal activations
+        activations = output
+
+    def backward_hook(module, grad_input, grad_output):
+        nonlocal gradients
+        gradients = grad_output[0]
+
+    # Gắn hook vào lớp conv3
+    hook_forward = model.conv3.register_forward_hook(forward_hook)
+    hook_backward = model.conv3.register_backward_hook(backward_hook)
+
+    # Tính toán forward
+    output = model(img_tensor)
+    
+    # Backward cho lớp mục tiêu
+    model.zero_grad()
+    output[0, target_class].backward()
+
+    # Bỏ hook
+    hook_forward.remove()
+    hook_backward.remove()
+
+    # Tính trọng số αk
+    weights = torch.mean(gradients, dim=(2, 3), keepdim=True)
+
+    # Tính CAM
+    cam = torch.sum(weights * activations, dim=1, keepdim=True)
+    cam = F.relu(cam)
+    cam = cam - cam.min()
+    cam = cam / cam.max()
+
+    return cam.detach().cpu().numpy()[0, 0]
+"""
+def grad_cam(model, img_tensor, target_class=0):
+    
+    #Tạo Grad-CAM heatmap cho ảnh đầu vào
+    
     model.eval()
     img_tensor.requires_grad_()
     
@@ -81,3 +121,4 @@ def grad_cam(model, img_tensor, target_class=0):
     cam = cam / cam.max()
     
     return cam.detach().cpu().numpy()[0, 0] 
+"""
